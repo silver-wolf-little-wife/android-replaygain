@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# 用 Android NDK 编译 16KB 对齐的 FFmpeg（arm64-v8a + x86_64）
+# 用 Android NDK 编译 16KB 对齐的"瘦身"FFmpeg（arm64-v8a + x86_64）
+# 仅保留 FLAC/MP3 解码 + aresample/loudnorm 滤波，二进制从 ~15MB 缩到 ~3MB，
+# 降低运行时内存，从而支持更高并发。
 # 用法：在 MSYS2 bash 中运行  bash /d/project/"Volume Normalization"/tools/build_ffmpeg_16kb.sh
 set -e
 
@@ -43,8 +45,15 @@ build_abi() {
         --disable-doc \
         --disable-htmlpages --disable-manpages --disable-podpages --disable-txtpages \
         --disable-debug \
-        --disable-ffplay --disable-ffprobe \
+        --disable-everything \
         --disable-network \
+        --enable-ffmpeg \
+        --enable-protocol=file \
+        --enable-muxer=null \
+        --enable-demuxer=flac,mp3 \
+        --enable-parser=flac,mpegaudio \
+        --enable-decoder=flac,mp3,mp3float,mp3adu,mp3adufloat,mp3on4,mp3on4float \
+        --enable-filter=aresample,loudnorm \
         $EXTRA_CFG \
         --extra-ldflags="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384"
 

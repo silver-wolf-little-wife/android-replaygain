@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class ReplayGainProcessor(
     private val analyzer: FFmpegAnalyzer,
+    private val maxConcurrency: Int,
     private val onProgress: suspend (message: String) -> Unit
 ) {
 
@@ -48,11 +49,8 @@ class ReplayGainProcessor(
                 return@runCatching 0
             }
 
-            // 并发分析：多核设备并行跑多个 ffmpeg，大幅提速
-            // 并发数取 2~4，避免同时跑太多 ffmpeg 占用过多内存
-            val maxConcurrency = (Runtime.getRuntime().availableProcessors().coerceAtLeast(2) - 1)
-                .coerceIn(2, 4)
-            val semaphore = Semaphore(maxConcurrency)
+            // 并发分析：由 ViewModel 按设备内存自适应传入（瘦身 ffmpeg 内存低，可更高并发）
+            val semaphore = Semaphore(maxConcurrency.coerceAtLeast(1))
             val results = ConcurrentLinkedQueue<FileResult>()
             val completed = AtomicInteger(0)
 

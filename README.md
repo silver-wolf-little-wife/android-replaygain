@@ -84,7 +84,7 @@ Windows：
 
 ## 注意事项
 
-- 当前 FFmpeg 二进制是用 **Android NDK r27d 从源码自行编译**的 16KB 页对齐版本（`tools/build_ffmpeg_16kb.sh`），打包在 `jniLibs/arm64-v8a` 和 `jniLibs/x86_64`。静态链接，仅依赖系统库，**无需 `libc++_shared.so`**。通过 `useLegacyPackaging` 解压到可执行目录，符合 Android 10+ W^X 安全要求及 Android 15/16 的 16KB 页要求。
+- 当前 FFmpeg 二进制是用 **Android NDK r27d 从源码自行编译**的 16KB 页对齐"瘦身"版本（`tools/build_ffmpeg_16kb.sh`），只保留 FLAC/MP3 解码 + aresample/loudnorm 滤波，单文件仅约 1.5MB（原全家桶约 15MB），运行内存占用低，可支撑更高并发。静态链接，仅依赖系统库，**无需 `libc++_shared.so`**。通过 `useLegacyPackaging` 解压到可执行目录，符合 Android 10+ W^X 安全要求及 Android 15/16 的 16KB 页要求。
 - 重新编译命令（在 MSYS2 中）：
   ```bash
   bash /d/project/"Volume Normalization"/tools/build_ffmpeg_16kb.sh

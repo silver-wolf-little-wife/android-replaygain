@@ -1,6 +1,9 @@
 package com.example.replaygain.ui
 
-import androidx.lifecycle.ViewModel
+import android.app.ActivityManager
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.replaygain.data.FFmpegAnalyzer
 import com.example.replaygain.data.ReplayGainProcessor
@@ -9,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 
-class MainViewModel : ViewModel() {
+class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState
@@ -44,6 +47,7 @@ class MainViewModel : ViewModel() {
     fun startProcessing(skipExisting: Boolean) {
         val dir = currentDirectory ?: return
         val analyzerInstance = analyzer ?: return
+        val concurrency = computeConcurrency()
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
@@ -52,9 +56,9 @@ class MainViewModel : ViewModel() {
                 completedCount = 0
             )
             clearLogs()
-            log("开始处理…")
+            log("开始处理…（并发数 $concurrency）")
 
-            val processor = ReplayGainProcessor(analyzerInstance) { message ->
+            val processor = ReplayGainProcessor(analyzerInstance, concurrency) { message ->
                 log(message)
                 _uiState.value = _uiState.value.copy(status = message)
             }
@@ -76,6 +80,25 @@ class MainViewModel : ViewModel() {
                     log("错误：${throwable.localizedMessage}")
                 }
         }
+    }
+
+    // 按设备内存自适应并发数：内存越大并发越多（配合瘦身 ffmpeg，内存占用更低）
+    private fun computeConcurrency(): Int {
+        val cores = Runtime.getRuntime().availableProcessors().coerceAtLeast(2)
+        val totalRamMB = try {
+            val am = getApplication<Application>().getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val mi = ActivityManager.MemoryInfo()
+            am.getMemoryInfo(mi)
+            (mi.totalMem / (1024 * 1024)).toInt()
+        } catch (e: Exception) {
+            cores * 256
+        }
+        return when {
+            totalRamMB >= 12000 -> 8
+            totalRamMB >= 6000 -> 6
+            totalRamMB >= 4000 -> 4
+            else -> 2
+        }.coerceAtMost(cores)
     }
 
     private fun log(message: String) {
