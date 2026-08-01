@@ -17,7 +17,7 @@ object ReplayGainTagger {
     private const val TRACK_GAIN_KEY = "REPLAYGAIN_TRACK_GAIN"
     private const val ALBUM_GAIN_KEY = "REPLAYGAIN_ALBUM_GAIN"
 
-    fun hasReplayGainTags(file: File, onError: (String) -> Unit = {}): Boolean {
+    suspend fun hasReplayGainTags(file: File, onError: suspend (String) -> Unit = {}): Boolean {
         return try {
             val audioFile = AudioFileIO.read(file)
             val tag = audioFile.tagOrCreateAndSetDefault
