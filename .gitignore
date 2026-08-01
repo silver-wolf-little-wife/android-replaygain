@@ -1,0 +1,28 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradlew
+!gradlew.bat
+
+# Android Studio / IDEA
+.idea/
+*.iml
+local.properties
+
+# Build outputs
+app/build/
+*.apk
+*.aab
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.log
+*.tmp
+
+# 本地测试音频与工具配置
+/example/
+.claude/

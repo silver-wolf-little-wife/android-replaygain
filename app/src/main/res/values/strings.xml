@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">音量平衡</string>
+    <string name="select_directory">选择工作目录</string>
+    <string name="start_scan">开始扫描并写入标签</string>
+    <string name="current_directory">当前目录：%s</string>
+    <string name="no_directory_selected">未选择目录</string>
+    <string name="permission_required">需要全部文件访问权限才能扫描音乐文件</string>
+    <string name="grant_permission">去开启权限</string>
+    <string name="skip_existing">跳过已有 ReplayGain 标签的文件</string>
+    <string name="ready">就绪</string>
+    <string name="scanning">正在扫描…</string>
+    <string name="processing">正在处理：%s</string>
+    <string name="completed">完成，共处理 %d 个文件</string>
+    <string name="error">错误：%s</string>
+    <string name="backup_warning">提示：写入标签前建议先备份原文件</string>
+    <string name="select_current_directory">选择当前目录</string>
+    <string name="parent_directory">[..] 返回上一级</string>
+</resources>
