@@ -27,6 +27,7 @@ class FFmpegAnalyzer(
         //   LUFS 是 -18 LUFS 参考，44.1k 下 K 加权误差 <0.1 LU，不影响音量平衡
         val command = listOf(
             ffmpegPath,
+            "-hide_banner",
             "-threads", "4",
             "-i", file.absolutePath,
             "-vn",
@@ -50,7 +51,9 @@ class FFmpegAnalyzer(
 
         val inputI = parseInputI(output)
         if (inputI == null) {
-            throw RuntimeException("无法解析响度（exit=$exitCode）：$output")
+            // 输出开头是元数据（含 LYRICS 歌词），又长又无助于排错；
+            // 只保留末尾（loudnorm JSON / 真实错误行）用于日志
+            throw RuntimeException("无法解析响度（exit=$exitCode）：${truncateOutput(output)}")
         }
 
         val trackGain = TARGET_LOUDNESS - inputI
@@ -69,5 +72,13 @@ class FFmpegAnalyzer(
 
     private fun formatGain(gain: Double): String {
         return String.format(Locale.US, "%.2f dB", gain)
+    }
+
+    private fun truncateOutput(output: String, maxLen: Int = 600): String {
+        return if (output.length > maxLen) {
+            "…[已省略前 ${output.length - maxLen} 字符]…\n" + output.takeLast(maxLen)
+        } else {
+            output
+        }
     }
 }
