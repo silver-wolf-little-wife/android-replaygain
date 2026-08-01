@@ -135,7 +135,7 @@ class MainActivity : AppCompatActivity() {
         showDirectoryBrowser(File(initialDir))
     }
 
-    private fun showDirectoryBrowser(currentDir: File) {
+    private fun showDirectoryBrowser(initialDir: File) {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_directory_picker, null)
         val tvPath = dialogView.findViewById<TextView>(R.id.tvCurrentPath)
         val listView = dialogView.findViewById<ListView>(R.id.listDirectories)
@@ -146,7 +146,10 @@ class MainActivity : AppCompatActivity() {
             .setCancelable(true)
             .create()
 
+        var currentFile = initialDir
+
         fun refresh(current: File) {
+            currentFile = current
             tvPath.text = current.absolutePath
 
             val entries = mutableListOf<String>()
@@ -178,11 +181,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnSelectCurrent.setOnClickListener {
-            viewModel.setDirectory(currentDir)
+            viewModel.setDirectory(currentFile)
             dialog.dismiss()
         }
 
-        refresh(currentDir)
+        refresh(initialDir)
         dialog.show()
     }
 
