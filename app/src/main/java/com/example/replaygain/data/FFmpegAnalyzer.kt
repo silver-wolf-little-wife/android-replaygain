@@ -21,10 +21,16 @@ class FFmpegAnalyzer(
     )
 
     fun analyze(file: File): AnalysisResult {
+        // -threads: 多线程解码（FLAC 帧级并行）
+        // -vn: 跳过视频流，只分析音频
+        // aresample=44100: 高采样率(如 96k/192k)文件降到 44.1k 再测响度，减少 loudnorm 处理量
+        //   LUFS 是 -18 LUFS 参考，44.1k 下 K 加权误差 <0.1 LU，不影响音量平衡
         val command = listOf(
             ffmpegPath,
+            "-threads", "4",
             "-i", file.absolutePath,
-            "-af", "loudnorm=I=$TARGET_LOUDNESS:TP=-1.5:LRA=11:print_format=json",
+            "-vn",
+            "-af", "aresample=44100,loudnorm=I=$TARGET_LOUDNESS:TP=-1.5:LRA=11:print_format=json",
             "-f", "null",
             "-"
         )

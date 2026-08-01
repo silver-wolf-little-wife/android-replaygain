@@ -2,8 +2,14 @@ package com.example.replaygain.data
 
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicInteger
 
 class ReplayGainProcessor(
     private val analyzer: FFmpegAnalyzer,
@@ -29,28 +35,43 @@ class ReplayGainProcessor(
                 throw IllegalStateException("未找到 FLAC/MP3 文件")
             }
 
-            val results = mutableListOf<FileResult>()
-            files.forEachIndexed { index, file ->
-                onProgress("正在分析 (${index + 1}/${files.size})：${file.name}")
+            // 跳过已有标签的文件（读标签较快，无需并行）
+            val targets = if (skipExisting) {
+                files.filter { !ReplayGainTagger.hasReplayGainTags(it) }
+            } else {
+                files
+            }
+            onProgress("待分析 ${targets.size} 个文件")
 
-                if (skipExisting && ReplayGainTagger.hasReplayGainTags(file)) {
-                    onProgress("  跳过（已有标签）：${file.name}")
-                    return@forEachIndexed
-                }
+            if (targets.isEmpty()) {
+                onProgress("所有文件均已跳过（已有 ReplayGain 标签）")
+                return@runCatching 0
+            }
 
-                try {
-                    val result = analyzer.analyze(file)
-                    results.add(
-                        FileResult(
-                            file = file,
-                            inputI = result.inputI,
-                            trackGain = result.trackGain
-                        )
-                    )
-                } catch (e: Exception) {
-                    Log.w(TAG, "分析失败：${file.name}", e)
-                    onProgress("  分析失败：${file.name} - ${e.localizedMessage}")
-                }
+            // 并发分析：多核设备并行跑多个 ffmpeg，大幅提速
+            // 并发数取 2~4，避免同时跑太多 ffmpeg 占用过多内存
+            val maxConcurrency = (Runtime.getRuntime().availableProcessors().coerceAtLeast(2) - 1)
+                .coerceIn(2, 4)
+            val semaphore = Semaphore(maxConcurrency)
+            val results = ConcurrentLinkedQueue<FileResult>()
+            val completed = AtomicInteger(0)
+
+            coroutineScope {
+                targets.map { file ->
+                    async {
+                        semaphore.withPermit {
+                            onProgress("正在分析：${file.name}")
+                            try {
+                                val r = analyzer.analyze(file)
+                                results.add(FileResult(file, r.inputI, r.trackGain))
+                            } catch (e: Exception) {
+                                Log.w(TAG, "分析失败：${file.name}", e)
+                                onProgress("  分析失败：${file.name} - ${e.localizedMessage}")
+                            }
+                            onProgress("  进度 ${completed.incrementAndGet()}/${targets.size}")
+                        }
+                    }
+                }.forEach { it.await() }
             }
 
             if (results.isEmpty()) {
@@ -63,6 +84,7 @@ class ReplayGainProcessor(
                     -18.0 - avgLoudness
                 }
 
+            // 写入标签保持串行，避免并发写文件
             results.forEachIndexed { index, result ->
                 onProgress("正在写入 (${index + 1}/${results.size})：${result.file.name}")
                 val albumGain = albumGains[result.file.parentFile] ?: result.trackGain

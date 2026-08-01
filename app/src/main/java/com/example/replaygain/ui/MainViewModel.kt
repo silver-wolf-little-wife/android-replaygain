@@ -81,7 +81,9 @@ class MainViewModel : ViewModel() {
     private fun log(message: String) {
         val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
             .format(java.util.Date())
-        _logs.value += "[$timestamp] $message\n"
+        synchronized(this) {
+            _logs.value += "[$timestamp] $message\n"
+        }
     }
 
     private fun clearLogs() {
