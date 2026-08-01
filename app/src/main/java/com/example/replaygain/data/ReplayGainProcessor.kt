@@ -38,7 +38,11 @@ class ReplayGainProcessor(
 
             // 跳过已有标签的文件（读标签较快，无需并行）
             val targets = if (skipExisting) {
-                files.filter { !ReplayGainTagger.hasReplayGainTags(it) }
+                files.filter { file ->
+                    !ReplayGainTagger.hasReplayGainTags(file) { msg ->
+                        onProgress("  跳过检测：$msg")
+                    }
+                }
             } else {
                 files
             }
