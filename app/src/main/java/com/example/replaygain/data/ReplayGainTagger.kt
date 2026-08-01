@@ -3,7 +3,6 @@ package com.example.replaygain.data
 import android.util.Log
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
-import org.jaudiotagger.tag.TagField
 import org.jaudiotagger.tag.flac.FlacTag
 import org.jaudiotagger.tag.id3.AbstractID3v2Frame
 import org.jaudiotagger.tag.id3.AbstractID3v2Tag
@@ -71,12 +70,12 @@ object ReplayGainTagger {
     }
 
     private fun deleteVorbisField(vorbisTag: VorbisCommentTag, key: String) {
-        val toRemove = mutableListOf<TagField>()
+        val toRemove = mutableListOf<String>()
         val iterator = vorbisTag.fields
         while (iterator.hasNext()) {
             val field = iterator.next()
             if (field.id.equals(key, ignoreCase = true)) {
-                toRemove.add(field)
+                toRemove.add(field.id)
             }
         }
         toRemove.forEach { vorbisTag.deleteField(it) }
