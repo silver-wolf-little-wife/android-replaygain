@@ -53,6 +53,7 @@ build_abi() {
         --enable-demuxer=flac,mp3 \
         --enable-parser=flac,mpegaudio \
         --enable-decoder=flac,mp3,mp3float,mp3adu,mp3adufloat,mp3on4,mp3on4float \
+        --enable-encoder=pcm_s16le \
         --enable-filter=aresample,loudnorm \
         $EXTRA_CFG \
         --extra-ldflags="-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384"
